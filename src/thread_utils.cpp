@@ -6,6 +6,8 @@
 #include <string.h>
 #include <netinet/in.h>
 #include "thread_queue.hpp"
+#include "parser.hpp"
+#include <unordered_map>;
 enum class OpType {
     ACCEPT,
     RECV,
@@ -47,6 +49,7 @@ void thread_init(){
     auto *accept_ctx = new ConnContext{.fd = thread_fd, .type = OpType::ACCEPT};
     io_uring_sqe_set_data(sqe, accept_ctx);
     io_uring_submit(&ring);
+    std::unordered_map<std::string, std::string> thread_map;
     while (true) {
         struct io_uring_cqe* cqe = nullptr;
         int ret = io_uring_wait_cqe(&ring, &cqe);
@@ -76,7 +79,31 @@ void thread_init(){
                 if (bytes_read > 0) {
                     ctx->buffer[bytes_read] = '\0';
                     std::printf("[fd=%d] Odebrano (%d B): %s\n", ctx->fd, bytes_read, ctx->buffer);
-                    // Tu wjedzie parser komend
+                    Resp_Command in_command = parse(static_cast<std::string_view>(ctx->buffer));
+                    switch (in_command.command){
+                        case PING:{
+                            break;
+                        }
+                        case GET:{
+                            break;
+                            }
+                        case SET:{
+                            std::string_view key = in_command.args[1];
+                            std::string_view value = in_command.args[2];
+                            thread_map.insert_or_assign(std::string{key}, std::string{value});
+
+                            }
+                        case OK:{
+                            break;
+                            }
+                        case ERROR:{
+                            break;
+                            }
+                        case UNKNOWN:{
+                            break;
+                            }
+
+                    }
                 } else {
                     std::printf("[-] Rozłączono: client_fd=%d\n", ctx->fd);
                     close(ctx->fd);

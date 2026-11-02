@@ -18,3 +18,4 @@ struct Resp_Command{
     std::array<std::string_view, 2> args;
 
 };
+Resp_Command parse(std::string_view input);
