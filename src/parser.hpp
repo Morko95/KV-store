@@ -7,8 +7,6 @@ enum Operation_type{
     PING,
     GET,
     SET,
-    OK,
-    ERROR,
     UNKNOWN
 };
 

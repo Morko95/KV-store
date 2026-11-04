@@ -1,5 +1,9 @@
 #include <asm-generic/socket.h>
+#include <cstddef>
+#include <cstring>
+#include <iterator>
 #include <liburing.h>
+#include <liburing/io_uring.h>
 #include <sys/socket.h>
 #include <system_error>
 #include <thread>
@@ -7,7 +11,7 @@
 #include <netinet/in.h>
 #include "thread_queue.hpp"
 #include "parser.hpp"
-#include <unordered_map>;
+#include <unordered_map>
 enum class OpType {
     ACCEPT,
     RECV,
@@ -82,25 +86,70 @@ void thread_init(){
                     Resp_Command in_command = parse(static_cast<std::string_view>(ctx->buffer));
                     switch (in_command.command){
                         case PING:{
-                            break;
+                            static constexpr std::string_view ping_response = "+PONG";
+                            ConnContext *output = new ConnContext{ctx->fd, OpType::SEND};
+                            std::memcpy(output->buffer, ping_response.data(), ping_response.size());
+                            struct io_uring_sqe* r_sqe = io_uring_get_sqe(&ring);
+                            io_uring_prep_send(r_sqe, output->fd, output->buffer,  ping_response.size(), 0);
+                            io_uring_sqe_set_data(r_sqe, output);
+                            io_uring_submit(&ring);
                         }
                         case GET:{
-                            break;
+                            std::string_view key = in_command.args[1];
+                            auto get = thread_map.find(std::string(key));
+                            ConnContext* result = new ConnContext{ctx->fd, OpType::SEND};
+
+                            if(get != thread_map.end())[[likely]]{
+                                const std::string& val = get->second;
+                                auto res = std::format_to_n(result->buffer, sizeof(result->buffer), "${}\r\n", val.size());
+                                size_t offset = res.size;
+
+                                std::memcpy(result->buffer + offset, val.data(), val.size());
+                                offset +=val.size();
+                                result->buffer[offset++] = '\r';
+                                result->buffer[offset++] = '\n';
+                                size_t total_len = offset + val.size();
+                                result->buffer[total_len++] = '\r';
+                                result->buffer[total_len++] = '\n';
+                                struct io_uring_sqe* r_sqe = io_uring_get_sqe(&ring);
+                                io_uring_prep_send(r_sqe, result->fd, result->buffer,  offset, 0);
+                                io_uring_sqe_set_data(r_sqe, result);
+                                io_uring_submit(&ring);
+                            }
+                            else{
+
+                                static constexpr std::string_view NIL_RESP = "$-1\r\n";
+                                std::memcpy(result->buffer, NIL_RESP.data(), NIL_RESP.size());
+                                std::size_t write_len = NIL_RESP.size();
+                                struct io_uring_sqe* r_sqe = io_uring_get_sqe(&ring);
+                                io_uring_prep_send(r_sqe, result->fd, result->buffer, write_len, 0);
+                                io_uring_sqe_set_data(r_sqe, result);
+                                io_uring_submit(&ring);
+                            }
+
                             }
                         case SET:{
                             std::string_view key = in_command.args[1];
                             std::string_view value = in_command.args[2];
                             thread_map.insert_or_assign(std::string{key}, std::string{value});
+                            static constexpr std::string_view ok_response = "+OK\r\n";
+                            ConnContext *output = new ConnContext{ctx->fd, OpType::SEND};
+                            std::memcpy(output->buffer, ok_response.data(), ok_response.size());
+                            struct io_uring_sqe* r_sqe = io_uring_get_sqe(&ring);
+                            io_uring_prep_send(r_sqe, output->fd, output->buffer,  ok_response.size(), 0);
+                            io_uring_sqe_set_data(r_sqe, output);
+                            io_uring_submit(&ring);
 
                             }
-                        case OK:{
-                            break;
-                            }
-                        case ERROR:{
-                            break;
-                            }
+
                         case UNKNOWN:{
-                            break;
+                            static constexpr std::string_view unknown_response = "+UNKNOWN COMMAND\r\n";
+                            ConnContext *output = new ConnContext{ctx->fd, OpType::SEND};
+                            std::memcpy(output->buffer, unknown_response.data(), unknown_response.size());
+                            struct io_uring_sqe* r_sqe = io_uring_get_sqe(&ring);
+                            io_uring_prep_send(r_sqe, output->fd, output->buffer,  unknown_response.size(), 0);
+                            io_uring_sqe_set_data(r_sqe, output);
+                            io_uring_submit(&ring);
                             }
 
                     }
