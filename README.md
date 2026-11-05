@@ -1,4 +1,4 @@
-# io_uring-kv (Proof of Concept)
+# KV-store-PoC (Proof of Concept)
 
 A lightweight, asynchronous in-memory Key-Value store built on modern Linux systems programming primitives, utilizing `io_uring` for event-driven networking and implementing the Redis Serialization Protocol (RESP).
 
