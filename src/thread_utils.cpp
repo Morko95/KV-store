@@ -12,6 +12,7 @@
 #include "thread_queue.hpp"
 #include "parser.hpp"
 #include <unordered_map>
+#include <format>
 enum class OpType {
     ACCEPT,
     RECV,
@@ -30,8 +31,6 @@ void thread_init(){
     flags |= IORING_SETUP_SINGLE_ISSUER;
     flags |= IORING_SETUP_COOP_TASKRUN;
 
-    struct io_uring_params ring_params;
-    struct thread_queue internal_queue;
 
     int inited = io_uring_queue_init(512,  &ring, flags);
     if(inited!=0){
@@ -93,6 +92,7 @@ void thread_init(){
                             io_uring_prep_send(r_sqe, output->fd, output->buffer,  ping_response.size(), 0);
                             io_uring_sqe_set_data(r_sqe, output);
                             io_uring_submit(&ring);
+                            break;
                         }
                         case GET:{
                             std::string_view key = in_command.args[1];
@@ -126,7 +126,7 @@ void thread_init(){
                                 io_uring_sqe_set_data(r_sqe, result);
                                 io_uring_submit(&ring);
                             }
-
+                            break;
                             }
                         case SET:{
                             std::string_view key = in_command.args[1];
@@ -139,7 +139,7 @@ void thread_init(){
                             io_uring_prep_send(r_sqe, output->fd, output->buffer,  ok_response.size(), 0);
                             io_uring_sqe_set_data(r_sqe, output);
                             io_uring_submit(&ring);
-
+                            break;
                             }
 
                         case UNKNOWN:{
@@ -150,6 +150,7 @@ void thread_init(){
                             io_uring_prep_send(r_sqe, output->fd, output->buffer,  unknown_response.size(), 0);
                             io_uring_sqe_set_data(r_sqe, output);
                             io_uring_submit(&ring);
+                            break;
                             }
 
                     }
