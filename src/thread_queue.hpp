@@ -1,3 +1,4 @@
+#pragma once
 #include <array>
 #include <atomic>
 #include <cstddef>
@@ -19,7 +20,7 @@ public:
     SpscRingBuffer() = default;
 
     //returns false if the buffer is full
-    bool push(T item) {
+    bool push(T&& item) {
         const size_t current_tail = tail_.load(std::memory_order_relaxed);
         const size_t current_head = head_.load(std::memory_order_acquire);
 

@@ -7,11 +7,8 @@
 #include <system_error>
 #include <string.h>
 #include <netinet/in.h>
-#include "thread_queue.hpp"
-#include <unordered_map>
 #include "thread_utils.hpp"
-
-void socket_init(ThreadContext context){
+void socket_init(ThreadContext &context){
     context.thread_fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;
     setsockopt(context.thread_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -24,7 +21,7 @@ void socket_init(ThreadContext context){
         throw std::system_error(errno, std::generic_category(), "Bind failed");}
     listen(context.thread_fd, 512);
 }
-void uring_init(ThreadContext context){
+void uring_init(ThreadContext &context){
     unsigned int flags = 0;
 
     flags |= IORING_SETUP_SINGLE_ISSUER;
@@ -41,12 +38,4 @@ void uring_init(ThreadContext context){
     auto *accept_ctx = new ConnContext{.fd = context.thread_fd, .type = OpType::ACCEPT};
     io_uring_sqe_set_data(sqe, accept_ctx);
     io_uring_submit(&context.ring);
-}
-ThreadContext thread_init(){
-    struct io_uring ring;
-    std::unordered_map<std::string, std::string> thread_map;
-    ThreadContext thread_context = ThreadContext{.ring = ring, .thread_map = thread_map};
-    socket_init(&thread_context);
-    uring_init(&thread_context);
-    return thread_context;
 }

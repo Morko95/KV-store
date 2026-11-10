@@ -1,24 +1,21 @@
 #pragma once
+#include "inbound_queue.hpp"
+#include "conn_context.hpp"
+#include "parser.hpp"
 #include <unordered_map>
 #include <string>
 #include <liburing.h>
-enum class OpType {
-    ACCEPT,
-    RECV,
-    SEND
-};
-struct ConnContext {
-    int fd;
-    OpType type;
-    char buffer[1024];
-};
+
+
+;
 struct ThreadContext{
-    struct io_uring ring;
-    int thread_fd;
+    struct io_uring ring {};
+    int thread_fd{-1};
     std::unordered_map<std::string, std::string> thread_map;
+    size_t thread_id{};
+    size_t total_thread_num{};
+    InboundQueue<Resp_Command, 8, 4096>* queue{nullptr};
 };
 
-void socket_init(ThreadContext *context);
-void uring_init(ThreadContext *context);
-
-ThreadContext thread_init();
+void socket_init(ThreadContext &context);
+void uring_init(ThreadContext &context);
