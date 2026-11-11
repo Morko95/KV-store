@@ -1,4 +1,4 @@
-# KV-store-PoC (High-Performance Engine)
+# KV-store (High-Performance Engine)
 
 A lightweight, asynchronous, in-memory Key-Value store built on modern Linux systems programming primitives, utilizing `io_uring` for event-driven networking and implementing the Redis Serialization Protocol (RESP).
 
