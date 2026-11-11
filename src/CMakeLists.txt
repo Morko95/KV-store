@@ -20,14 +20,10 @@ target_include_directories(resp_server PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_options(resp_server PRIVATE -fsanitize=address,undefined)
 target_compile_options(resp_server PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-    -fsanitize=address,undefined -g -fno-omit-frame-pointer
+-O3 -march=native -flto -fno-omit-frame-pointer -Wall -Wextra
 )
-
+add_link_options(-flto)
 # 4. Linkowanie bibliotek systemowych: liburing i wątki
 find_package(Threads REQUIRED)
 
