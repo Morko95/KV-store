@@ -50,7 +50,7 @@ Benchmarked on AMD Ryzen 7 8845HS using `redis-benchmark` in synchronous ping-po
 
 ```bash
 # Configure and build in Release mode
-cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake -B build 
 cmake --build build
 
 # Run server (default port 8080)
